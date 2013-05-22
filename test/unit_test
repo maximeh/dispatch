@@ -1,0 +1,79 @@
+#!/bin/sh
+
+BASEDIR=$(realpath $(dirname $0))
+
+check_file ()
+{
+    local src_path="$1"
+    local dest_path="$2"
+
+    src_sha1=$(sha1sum "$src_path" | awk '{print $1}')
+    src_size=$(stat -c %s "$src_path")
+
+    dest_sha1=$(sha1sum "$dest_path" | awk '{print $1}')
+    dest_size=$(stat -c %s "$dest_path")
+
+    [ "$src_sha1" != "$dest_sha1" ] && echo "FILES ARE DIFFERENT !" || echo "FILES ARE OK"
+    echo "SRC  = $src_sha1 ($src_path) - $src_size"
+    echo "DEST = $dest_sha1 ($dest_path) - $dest_size"
+}
+
+
+echo "COPYING FILES"
+$BASEDIR/../dispatch $opts $BASEDIR/data_src $BASEDIR/data_dest
+
+# data_src
+# ├── full
+# │   ├── 01 Back In Black.mp3
+# │   ├── not_a_music_file.mp3
+# │   └── sub_folder
+# │       └── not_a_music_file
+# └── with_album_tag
+#     ├── 01 Back In Black.mp3
+#         └── not_a_music_file
+
+src="$BASEDIR/data_src/without_album_tag/01 Back In Black.mp3"
+dest="$BASEDIR/data_dest/AC_DC/01 - Back In Black.mp3"
+check_file "$src" "$dest"
+echo "-----------------------------------------------"
+src="$BASEDIR/data_src/full/01 Back In Black.mp3"
+dest="$BASEDIR/data_dest/AC_DC/Best of AC_DC/01 - Back In Black.mp3"
+check_file "$src" "$dest"
+
+# Cleanup
+rm -Rf $BASEDIR/data_dest/AC_DC/
+
+echo "==============================================="
+
+echo "MOVING FILES"
+# Copy files to keep our test folder "untouched"
+cp -a $BASEDIR/data_src $BASEDIR/data_move
+
+# Startup
+./dispatch -m $BASEDIR/data_move $BASEDIR/data_dest
+
+# Use the file in data_src because we will need the checksum
+src="$BASEDIR/data_src/without_album_tag/01 Back In Black.mp3"
+dest="$BASEDIR/data_dest/AC_DC/01 - Back In Black.mp3"
+check_file "$src" "$dest"
+
+# Check that files doesn't exist anymore in data_move
+src="$BASEDIR/data_move/without_album_tag/01 Back In Black.mp3"
+[ -f "$src" ] && echo "File still exists :/ ($src)"
+
+echo "-----------------------------------------------"
+
+# Use the file in data_src because we will need the checksum
+src="$BASEDIR/data_src/without_album_tag/01 Back In Black.mp3"
+dest="$BASEDIR/data_dest/AC_DC/01 - Back In Black.mp3"
+check_file "$src" "$dest"
+
+# Check that files doesn't exist anymore in data_move
+src="$BASEDIR/data_move/without_album_tag/01 Back In Black.mp3"
+[ -f "$src" ] && echo "File still exists :/ ($src)"
+
+# Cleanup
+rm -Rf $BASEDIR/data_dest/AC_DC/
+rm -Rf $BASEDIR/data_move/
+
+
