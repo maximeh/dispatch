@@ -75,8 +75,7 @@ static inline void escape (char *source);
 static void free_list (struct tag *head);
 static char *get_ext (const char *filename);
 static inline int is_valid_ext (const char *ext);
-static int list (const char *name, const struct stat *status, int type, struct
-        FTW *ftwbuf);
+static int list (const char *name, const struct stat *status, int type);
 static char *str_replace (const char *orig, const char *rep, const char *with);
 static inline void usage ();
 

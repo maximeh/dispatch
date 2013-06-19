@@ -74,8 +74,8 @@ main (int argc, char **argv)
     /* List directory recursively */
     log ("Searching in %s \n", source_path);
     log ("Will move in %s\n", dest_path);
-    if (nftw (source_path, list, 20, FTW_PHYS | FTW_DEPTH) == -1)
-        perror ("nftw");
+    if (ftw (source_path, list, 20) == -1)
+        perror ("ftw");
 
     fclose ( stdin );
     fclose ( stdout );
@@ -85,8 +85,7 @@ main (int argc, char **argv)
 }
 
 int
-list (const char *path, const struct stat *status, int type,
-      struct FTW *ftwbuf)
+list (const char *path, const struct stat *status, int type)
 {
     char *formated_dir_path = NULL;
     char *formated_path = NULL;
