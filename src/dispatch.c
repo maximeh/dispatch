@@ -92,11 +92,8 @@ list (const char *path, const struct stat *status, int type)
     char *formated_path_copy = NULL;
     struct stat dir_stat;
 
-    if (type == FTW_NS)
-        return 0;
-
     /* We only want to treat regular file */
-    if (type != FTW_F)
+    if (type == FTW_NS || type != FTW_F)
         return 0;
 
     log ("\nCurrent path is: %s\n", path);
@@ -114,9 +111,7 @@ list (const char *path, const struct stat *status, int type)
     if (formated_dir_path == NULL)
     {
         log ("dirname: %s\n", path);
-        free (formated_path);
-        free (formated_path_copy);
-        return 0;
+        goto clean_exit;
     }
     log ("Dirname: %s\n", formated_dir_path);
 
@@ -132,9 +127,7 @@ list (const char *path, const struct stat *status, int type)
         if (!S_ISDIR (dir_stat.st_mode))
         {
             log ("%s exists and it's not a dir.\n", formated_dir_path);
-            free (formated_path);
-            free (formated_path_copy);
-            return 0;
+            goto clean_exit;
         }
     }
 
@@ -153,6 +146,9 @@ list (const char *path, const struct stat *status, int type)
             remove (path);
         }
     }
+    goto clean_exit;
+
+clean_exit:
     free (formated_path);
     free (formated_path_copy);
     return 0;
@@ -180,34 +176,26 @@ build_path_from_tag (const char *file_path)
     }
     log ("Extension: %s\n", ext);
     if (!is_valid_ext (ext))
-    {
-        free (ext);
-        return NULL;
-    }
+        goto free_ext_exit;
 
     if ((file = taglib_file_new (file_path)) == NULL)
     {
         log ("The type of %s cannot be determined or the file cannot "
                "be opened\n", file_path);
-        free (ext);
-        return NULL;
+        goto free_ext_exit;
     }
 
     if (!taglib_file_is_valid (file))
     {
         log ("The file %s is not valid\n", file_path);
-        taglib_file_free (file);
-        free (ext);
-        return NULL;
+        goto free_taglib;
     }
 
     tag = taglib_file_tag (file);
     if (tag == NULL)
     {
         log ("The file %s is not valid", file_path);
-        taglib_file_free (file);
-        free (ext);
-        return NULL;
+        goto free_taglib;
     }
 
     /* Create formated_path using tag info of file_path */
@@ -276,6 +264,15 @@ build_path_from_tag (const char *file_path)
     free (formated_path);
 
     return full_formated_path;
+
+free_ext_exit:
+    free (ext);
+    return NULL;
+
+free_taglib:
+    taglib_file_free (file);
+    goto free_ext_exit;
+
 }
 
 static void
@@ -333,17 +330,13 @@ _copy (const char *src, const char *dest)
         if ((err = posix_fadvise (fileno (in_fd), 0, 0, POSIX_FADV_SEQUENTIAL)) != 0)
         {
             fprintf (stderr, "%s\n", strerror (err));
-            fclose (in_fd);
-            fclose (out_fd);
-            return;
+            goto close_fds;
         }
 
         if ((err = posix_fallocate (fileno (out_fd), 0, in_st.st_size)) != 0)
         {
             fprintf (stderr, "%s\n", strerror (err));
-            fclose (in_fd);
-            fclose (out_fd);
-            return;
+            goto close_fds;
         }
 
         bytes_copied = sendfile (fileno (out_fd), fileno (in_fd), 0,
@@ -381,8 +374,12 @@ _copy (const char *src, const char *dest)
         fwrite (buf, bytes_left, 1, out_fd);
     #endif
 
+    goto close_fds;
+
+close_fds:
     fclose (in_fd);
     fclose (out_fd);
+    return;
 }
 
 static char *
