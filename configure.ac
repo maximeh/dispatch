@@ -3,9 +3,8 @@
 
 AC_PREREQ([2.69])
 AC_INIT([dispatch], [0.2], [maxime.hadjinlian@gmail.com])
-AM_INIT_AUTOMAKE([dispatch], [0.2])
 AC_CONFIG_SRCDIR([src/dispatch.c])
-#AC_CONFIG_HEADERS([config.h])
+AM_INIT_AUTOMAKE
 
 # Checks for programs.
 AC_PROG_CC
