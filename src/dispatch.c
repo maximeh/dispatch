@@ -333,7 +333,7 @@ _copy (const char *src, const char *dest)
 
         if ((err = posix_fadvise (fileno (in_fd), 0, 0, POSIX_FADV_SEQUENTIAL)) != 0)
         {
-            fprintf(stderr, "%s\n", strerror(err));
+            fprintf (stderr, "%s\n", strerror (err));
             fclose (in_fd);
             fclose (out_fd);
             return;
@@ -341,13 +341,13 @@ _copy (const char *src, const char *dest)
 
         if ((err = posix_fallocate (fileno (out_fd), 0, in_st.st_size)) != 0)
         {
-            fprintf(stderr, "%s\n", strerror(err));
+            fprintf (stderr, "%s\n", strerror (err));
             fclose (in_fd);
             fclose (out_fd);
             return;
         }
 
-        bytes_copied = sendfile(fileno (out_fd), fileno (in_fd), 0,
+        bytes_copied = sendfile (fileno (out_fd), fileno (in_fd), 0,
                 in_st.st_size);
         if (bytes_copied != in_st.st_size)
         {
@@ -481,7 +481,7 @@ escape (char *source)
 }
 
 static void
-append_tag(struct tag *llist, const char *place_holder, const char *value)
+append_tag (struct tag *llist, const char *place_holder, const char *value)
 {
     struct tag *curr = llist;
     struct tag *new = NULL;
@@ -508,7 +508,7 @@ free_list (struct tag *head)
     /* Loop through the list to free each tag */
     while (head != NULL)
     {
-        log("Freeing %s => %s\n", head->place_holder, head->value);
+        log ("Freeing %s => %s\n", head->place_holder, head->value);
         /* Keep current element */
         tmp = head;
         /* Move the head to the next element */

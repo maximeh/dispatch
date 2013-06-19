@@ -29,7 +29,7 @@
 #pragma once
 
 #define _XOPEN_SOURCE 600
-#define log(format, ...) if(verbose == 1) fprintf (stderr, format, ## __VA_ARGS__)
+#define log(format, ...) if (verbose == 1) fprintf (stderr, format, ## __VA_ARGS__)
 
 #if _APPLE
     #include <copyfile.h>
