@@ -1,0 +1,32 @@
+#!/bin/sh
+
+BASEDIR=$(realpath $(dirname $0))
+
+sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
+
+echo "COPYING FILES"
+grep '^Cached:' /proc/meminfo
+time -f "%E real, %U user, %S sys" $BASEDIR/../dispatch $opts $BASEDIR/data_src $BASEDIR/data_dest
+grep '^Cached:' /proc/meminfo
+
+# Cleanup
+rm -Rf $BASEDIR/data_dest
+mkdir -p $BASEDIR/data_dest
+sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
+
+echo "==============================================="
+
+echo "MOVING FILES"
+# Copy files to keep our test folder "untouched"
+cp -a $BASEDIR/data_src $BASEDIR/data_move
+
+grep '^Cached:' /proc/meminfo
+time -f "%E real, %U user, %S sys" ./dispatch -m $BASEDIR/data_move $BASEDIR/data_dest
+grep '^Cached:' /proc/meminfo
+
+# Cleanup
+rm -Rf $BASEDIR/data_dest
+mkdir -p $BASEDIR/data_dest
+rm -Rf $BASEDIR/data_move/
+sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
+
