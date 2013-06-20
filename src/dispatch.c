@@ -74,7 +74,7 @@ main (int argc, char **argv)
     /* List directory recursively */
     log ("Searching in %s \n", source_path);
     log ("Will move in %s\n", dest_path);
-    if (ftw (source_path, list, 20) == -1)
+    if (ftw (source_path, dispatch, 20) == -1)
         perror ("ftw");
 
     fclose ( stdin );
@@ -85,7 +85,7 @@ main (int argc, char **argv)
 }
 
 int
-list (const char *path, const struct stat *status, int type)
+dispatch (const char *path, const struct stat *status, int type)
 {
     char *formated_dir_path = NULL;
     char *formated_path = NULL;
@@ -121,14 +121,11 @@ list (const char *path, const struct stat *status, int type)
         log ("Creating tree : %s\n", formated_dir_path);
         _mkdir (formated_dir_path);
     }
-    else
+    else if (!S_ISDIR (dir_stat.st_mode))
     {
         /* S_ISDIR is a macro */
-        if (!S_ISDIR (dir_stat.st_mode))
-        {
-            log ("%s exists and it's not a dir.\n", formated_dir_path);
-            goto clean_exit;
-        }
+        log ("%s exists and it's not a dir.\n", formated_dir_path);
+        goto clean_exit;
     }
 
     /* cp or move file to full path */
@@ -138,13 +135,10 @@ list (const char *path, const struct stat *status, int type)
     {
         _copy (path, formated_path);
     }
-    else
+    else if (rename (path, formated_path))
     {
-        if (rename (path, formated_path))
-        {
-            _copy (path, formated_path);
-            remove (path);
-        }
+        _copy (path, formated_path);
+        remove (path);
     }
     goto clean_exit;
 
