@@ -199,25 +199,28 @@ build_path_from_tag (const char *file_path, const char *ext)
     tag_list->place_holder = "%album";
     tag_list->value = taglib_tag_album (tag);
     tag_list->next = NULL;
+    log ("album\t-\t\"%s\"\n", taglib_tag_album (tag));
 
     // Keep a track of the head
     head = tag_list;
-    log ("album\t-\t\"%s\"\n", taglib_tag_album (tag));
 
-    append_tag (tag_list, "%artist", taglib_tag_artist (tag));
+    tag_list = append_tag (tag_list, "%artist", taglib_tag_artist (tag));
     log ("artist\t-\t\"%s\"\n", taglib_tag_artist (tag));
 
-    append_tag (tag_list, "%title", taglib_tag_title (tag));
+    tag_list = append_tag (tag_list, "%title", taglib_tag_title (tag));
     log ("title\t-\t\"%s\"\n", taglib_tag_title (tag));
 
     track = taglib_tag_track (tag);
     log ("track\t-\t\"%02i\"\n", track);
     sprintf (track_str, track < 10 ? "0%d" : "%d", track);
-    append_tag (tag_list, "%track", track_str);
+    tag_list = append_tag (tag_list, "%track", track_str);
 
     log ("year\t-\t\"%d\"\n", taglib_tag_year (tag));
     sprintf (year_str, "%d", taglib_tag_year (tag));
-    append_tag (tag_list, "%year", year_str);
+    tag_list = append_tag (tag_list, "%year", year_str);
+
+    /* Rewind to the head */
+    tag_list = head;
 
     /* Loop through the tag_list */
     while (tag_list->next != NULL) {
@@ -239,11 +242,9 @@ build_path_from_tag (const char *file_path, const char *ext)
         log ("actual path - \"%s\"\n", formated_path);
         tag_list = tag_list->next;
     }
-    /* Rewind to the head - not really usefull */
-    tag_list = head;
 
     /* Free the tags and list we just used */
-    free_list (tag_list);
+    free_list (head);
     taglib_tag_free_strings ();
     taglib_file_free (file);
 
@@ -467,24 +468,20 @@ escape (char *source)
     }
 }
 
-static void
+static struct tag *
 append_tag (struct tag *llist, const char *place_holder, const char *value)
 {
-    struct tag *curr = llist;
-    struct tag *new = NULL;
-
-    /* Go to the end of the list to append our element */
-    while (curr->next != NULL)
-        curr = curr->next;
-
     /* Create a new element */
-    new = malloc (sizeof (struct tag));
+    struct tag *new = malloc (sizeof (struct tag));
     new->place_holder = place_holder;
     new->value = value;
     new->next = NULL;
 
     /* Put the new element at the end of the list */
-    curr->next = new;
+    llist->next = new;
+
+    /* Return the new end of the list */
+    return llist->next;
 }
 
 static void

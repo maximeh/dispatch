@@ -68,8 +68,8 @@ struct tag{
 
 static void _copy (const char *src, const char *dest);
 static void _mkdir (const char *path);
-static void append_tag (struct tag *llist, const char *holder, const char
-        *value);
+static struct tag * append_tag (struct tag *llist, const char *holder, const
+        char *value);
 static char *build_path_from_tag (const char *path, const char *ext);
 static int dispatch (const char *name, const struct stat *status, int type);
 static inline void escape (char *source);
