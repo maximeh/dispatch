@@ -272,6 +272,9 @@ free_taglib:
 static void
 _mkdir (const char *path)
 {
+    // Path MUST not be terminated by a '/'
+    // It should never happen as path came here from a dirname call
+    // which strips the last '/'.
     char *opath;
     char *p;
     size_t len;
@@ -284,9 +287,6 @@ _mkdir (const char *path)
         return;
     }
     strncpy (opath, path, len + 1);
-
-    if(opath[len - 1] == '/')
-        opath[len - 1] = '\0';
 
     for(p = opath; *p; ++p)
         if(*p == '/') {
@@ -423,9 +423,7 @@ str_replace(const char *orig, const char *rep, const char *with) {
         return NULL;
 
     char *with_cpy = strdup (with);
-    escape (with_cpy);
-    if (!with_cpy)
-        with_cpy = "";
+    if (strchr (with_cpy, '/') != NULL) escape (with_cpy);
     len_with = strlen (with_cpy);
 
     for (count = 0; (tmp = strstr (ins, rep)); ++count)
