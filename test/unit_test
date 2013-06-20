@@ -20,7 +20,7 @@ check_file ()
 
 
 echo "COPYING FILES"
-$BASEDIR/../dispatch $opts $BASEDIR/data_src $BASEDIR/data_dest
+$BASEDIR/../dispatch $BASEDIR/data_src $BASEDIR/data_dest
 
 # data_src
 # ├── full
@@ -42,6 +42,7 @@ check_file "$src" "$dest"
 
 # Cleanup
 rm -Rf $BASEDIR/data_dest/AC_DC/
+rm -Rf $BASEDIR/data_dest/*.mp3
 
 echo "==============================================="
 
@@ -74,6 +75,7 @@ src="$BASEDIR/data_move/without_album_tag/01 Back In Black.mp3"
 
 # Cleanup
 rm -Rf $BASEDIR/data_dest/AC_DC/
+rm -Rf $BASEDIR/data_dest/*.mp3
 rm -Rf $BASEDIR/data_move/
 
 
