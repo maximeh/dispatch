@@ -373,27 +373,22 @@ close_fds:
 static char *
 get_ext (const char *filename)
 {
-    int i, length = 0;
-    char *extension = NULL;
-
-    /* Find the extension */
-    char *ext = strrchr (filename, '.');
+    /* Find the extension; the +1 let us avoid the dot. */
+    char *ext = strrchr (filename, '.') + 1;
+    char *ext_dup = ext;
     if (ext == NULL)
         return NULL;
 
-    /* Avoid the dot in the extension */
-    extension = strdup (++ext);
-    length = (int)strlen (extension);
-    for (i = 0; i < length; ++i)
-       extension[i] = tolower (extension[i]);
+    for (;*ext; ++ext)
+        *ext = tolower(*ext);
 
-    if (0 != str_compare (extension, "mp3") &&
-        0 != str_compare (extension, "m4a") &&
-        0 != str_compare (extension, "flac") &&
-        0 != str_compare (extension, "ogg"))
+    if (0 != str_compare (ext_dup, "mp3") &&
+        0 != str_compare (ext_dup, "m4a") &&
+        0 != str_compare (ext_dup, "flac") &&
+        0 != str_compare (ext_dup, "ogg"))
         return NULL;
 
-    return extension;
+    return ext_dup;
 }
 
 // Stolen from Jason Mooberry (@jasonmoo on GitHub)
