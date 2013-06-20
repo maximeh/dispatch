@@ -409,10 +409,10 @@ str_replace(const char *orig, const char *rep, const char *with) {
     char *result; // the return string
     char *ins;    // the next insert point
     char *tmp;    // varies
-    int len_orig = strlen (orig);
+    int len_orig; // length of origin
     int len_rep;  // length of rep
     int len_with; // length of with
-    int len_front; // distance between rep and end of last rep
+    int len_front;// distance between rep and end of last rep
     int count;    // number of replacements
 
     if (!orig)
@@ -421,6 +421,8 @@ str_replace(const char *orig, const char *rep, const char *with) {
         return NULL;
     if (!(ins = strstr (orig, rep)))
         return NULL;
+
+    len_orig = strlen (orig);
 
     char *with_cpy = strdup (with);
     if (strchr (with_cpy, '/') != NULL) escape (with_cpy);
