@@ -90,6 +90,7 @@ dispatch (const char *path, const struct stat *status, int type)
     char *formated_dir_path = NULL;
     char *formated_path = NULL;
     char *formated_path_copy = NULL;
+    char *ext = NULL;
     struct stat dir_stat;
 
     /* We only want to treat regular file */
@@ -98,8 +99,17 @@ dispatch (const char *path, const struct stat *status, int type)
 
     log ("\nCurrent path is: %s\n", path);
 
+    /* Test if the file is valid */
+    /* we got the extension of each file */
+    if ((ext = get_ext (path)) == NULL)
+    {
+        log ("No extension for %s\n", path);
+        return 0;
+    }
+    log ("Extension: %s\n", ext);
+
     /* Grab id3tag for each filename  */
-    if ((formated_path = build_path_from_tag (path)) == NULL)
+    if ((formated_path = build_path_from_tag (path, ext)) == NULL)
     {
         log ("Error reading tag\n");
         return 0;
@@ -149,32 +159,23 @@ clean_exit:
 }
 
 static char *
-build_path_from_tag (const char *file_path)
+build_path_from_tag (const char *file_path, const char *ext)
 {
     struct tag *tag_list = NULL, *head = NULL;
     char *full_formated_path = NULL;
     char * formated_path = NULL;
     char * temp_path = NULL;
-    char *ext = NULL;
     char track_str[3];
     char year_str[5];
     int track;
     TagLib_File *file;
     TagLib_Tag *tag;
 
-    /* we got the extension of each file */
-    if ((ext = get_ext (file_path)) == NULL)
-    {
-        log ("No extension for %s\n", file_path);
-        return NULL;
-    }
-    log ("Extension: %s\n", ext);
-
     if ((file = taglib_file_new (file_path)) == NULL)
     {
         log ("The type of %s cannot be determined or the file cannot "
                "be opened\n", file_path);
-        goto free_ext_exit;
+        return NULL;
     }
 
     if (!taglib_file_is_valid (file))
@@ -252,18 +253,13 @@ build_path_from_tag (const char *file_path)
             + strlen (ext) + 3);
     sprintf (full_formated_path, "%s/%s.%s", dest_path, formated_path, ext);
     log ("Final path is: %s\n", full_formated_path);
-    free (ext);
     free (formated_path);
 
     return full_formated_path;
 
-free_ext_exit:
-    free (ext);
-    return NULL;
-
 free_taglib:
     taglib_file_free (file);
-    goto free_ext_exit;
+    return NULL;
 
 }
 
