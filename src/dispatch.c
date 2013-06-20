@@ -169,8 +169,6 @@ build_path_from_tag (const char *file_path)
         return NULL;
     }
     log ("Extension: %s\n", ext);
-    if (!is_valid_ext (ext))
-        goto free_ext_exit;
 
     if ((file = taglib_file_new (file_path)) == NULL)
     {
@@ -393,26 +391,27 @@ get_ext (const char *filename)
     for (i = 0; i < length; ++i)
        extension[i] = tolower (extension[i]);
 
+    if (0 != str_compare (extension, "mp3") &&
+        0 != str_compare (extension, "m4a") &&
+        0 != str_compare (extension, "flac") &&
+        0 != str_compare (extension, "ogg"))
+        return NULL;
+
     return extension;
 }
 
 // Stolen from Jason Mooberry (@jasonmoo on GitHub)
-static inline int str_compare(const char* a, const char* b) {
+static int
+str_compare(const char* a, const char* b)
+{
     for(;*a == *b; ++a, ++b)
         if (*a == '\0' || *b == '\0') return 0;
-            return *a - *b;
-}
-
-static int
-is_valid_ext (const char *ext)
-{
-    return (0 == str_compare (ext, "mp3") ||
-            0 == str_compare (ext, "flac") ||
-            0 == str_compare (ext, "m4a") || 0 == str_compare (ext, "ogg"));
+        return *a - *b;
 }
 
 static char *
-str_replace(const char *orig, const char *rep, const char *with) {
+str_replace(const char *orig, const char *rep, const char *with)
+{
     char *result; // the return string
     char *ins;    // the next insert point
     char *tmp;    // varies
