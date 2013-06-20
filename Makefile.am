@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign
-CFLAGS=-Wall -g -O0 -I/usr/include/taglib
+CFLAGS=-Wall -g -O3 -I/usr/include/taglib
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @TAGLIB_LIBS@ @TAGLIB_C_LIBS@
 CPPFLAGS=-I/usr/local/include -DVERSION=\"$(VERSION)\" -DPROG="\"$(PACKAGE)\"" @ARCH_DEFINES@

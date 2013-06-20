@@ -184,7 +184,7 @@ AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
-CFLAGS = -Wall -g -O0 -I/usr/include/taglib
+CFLAGS = -Wall -g -O3 -I/usr/include/taglib
 CPP = @CPP@
 CPPFLAGS = -I/usr/local/include -DVERSION=\"$(VERSION)\" -DPROG="\"$(PACKAGE)\"" @ARCH_DEFINES@
 CYGPATH_W = @CYGPATH_W@
