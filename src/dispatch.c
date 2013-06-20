@@ -396,12 +396,19 @@ get_ext (const char *filename)
     return extension;
 }
 
+// Stolen from Jason Mooberry (@jasonmoo on GitHub)
+static inline int str_compare(const char* a, const char* b) {
+    for(;*a == *b; ++a, ++b)
+        if (*a == '\0' || *b == '\0') return 0;
+            return *a - *b;
+}
+
 static int
 is_valid_ext (const char *ext)
 {
-    return (0 == strcmp (ext, "mp3") ||
-            0 == strcmp (ext, "flac") ||
-            0 == strcmp (ext, "m4a") || 0 == strcmp (ext, "ogg"));
+    return (0 == str_compare (ext, "mp3") ||
+            0 == str_compare (ext, "flac") ||
+            0 == str_compare (ext, "m4a") || 0 == str_compare (ext, "ogg"));
 }
 
 static char *
