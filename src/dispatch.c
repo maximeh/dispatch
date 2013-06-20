@@ -374,11 +374,12 @@ close_fds:
 static char *
 get_ext (const char *filename)
 {
-    /* Find the extension; the +1 let us avoid the dot. */
-    char *ext = strrchr (filename, '.') + 1;
-    char *ext_dup = ext;
+    /* Find the extension */
+    char *ext = strrchr (filename, '.');
     if (ext == NULL)
         return NULL;
+    /* Avoid the dot */
+    char *ext_dup = ++ext;
 
     for (;*ext; ++ext)
         *ext = tolower(*ext);
