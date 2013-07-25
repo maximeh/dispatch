@@ -36,7 +36,7 @@ build
 This projects uses the autotools, so you should be able to do a famous:
 
 ```bash
-./configure && make
+./bootstrap.sh && ./configure && make
 ```
 
 This should work on Linux and Mac, maybe on Windows, I haven't tested it.
@@ -46,6 +46,4 @@ why ?
 
 I was tired to use some big bloated software to do this simple task for me and
 I was looking for an excuse to do some C and learn a bit about the autotools.
-
-Maybe, I'll add a Qt GUI over this to learn a bit more.
 
