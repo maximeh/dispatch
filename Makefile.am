@@ -1,4 +1,4 @@
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 CFLAGS=-Wall -g -O3 -I/usr/include/taglib
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @TAGLIB_LIBS@ @TAGLIB_C_LIBS@
