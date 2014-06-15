@@ -30,3 +30,15 @@ mkdir -p $BASEDIR/data_dest
 rm -Rf $BASEDIR/data_move/
 sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
 
+echo "==============================================="
+
+echo "CP"
+
+grep '^Cached:' /proc/meminfo
+time -f "%E real, %U user, %S sys" cp -a $BASEDIR/data_src $BASEDIR/data_move
+grep '^Cached:' /proc/meminfo
+
+# Cleanup
+rm -Rf $BASEDIR/data_move
+sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
+
