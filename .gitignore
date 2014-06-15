@@ -21,19 +21,28 @@
 *.i*86
 *.x86_64
 *.hex
+*.swp
 
 # http://www.gnu.org/software/automake
 
 Makefile.in
 config.log
+src/.deps/
+src/.dirstamp
 
 # http://www.gnu.org/software/autoconf
 
-autom4te.cache
 aclocal.m4
+autom4te.cache
 compile
+config.guess
+config.status
+config.sub
 configure
 depcomp
 install-sh
+Makefile
 missing
 stamp-h1
+
+dispatch
