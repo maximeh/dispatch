@@ -28,54 +28,56 @@
 
 #pragma once
 
-#define _XOPEN_SOURCE 600
-#define log(format, ...) if (verbose == 1) fprintf (stderr, format, ## __VA_ARGS__)
+#define _XOPEN_SOURCE 700
+#define BUFFER_SIZE 16384
+#define log(fmt, ...) if (verbose == 1) fprintf (stdout, fmt, ## __VA_ARGS__)
 
 #if _APPLE
-    #include <copyfile.h>
+#include <copyfile.h>
 #endif
 #include <ctype.h>
 #include <dirent.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <ftw.h>
 #include <getopt.h>
 #include <libgen.h>
 #ifdef _LINUX
-    #include <linux/limits.h>
+#include <linux/limits.h>
 #elif _APPLE
-    #include <limits.h>
+#include <limits.h>
 #endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #ifdef _LINUX
-    #include <sys/sendfile.h>
+#include <sys/sendfile.h>
 #endif
 #include <taglib/tag_c.h>
 #include <unistd.h>
 
 static int verbose = 0, copy = 1;
-static char source_path[PATH_MAX];
-static char dest_path[PATH_MAX];
+static char *source_path;
+static char *dest_path;
 static char *format = "%artist/%album/%track - %title";
 struct tag{
-    const char *place_holder;
-    const char *value;
-    struct tag *next;
+	const char *place_holder;
+	const char *value;
+	struct tag *next;
 };
 
-static void _copy (const char *src, const char *dest);
-static void _mkdir (const char *path);
-static struct tag * append_tag (struct tag *llist, const char *holder, const
-        char *value);
-static char *build_path_from_tag (const char *path, const char *ext);
+static int _copy (const char *src, const char *dest);
+static int _mkdirs (const char *path);
+static int _mkdir (const char *path);
+static struct tag* append_tag (struct tag *llist, const char *holder, const
+		char *value);
+static char* build_path_from_tag (const char *path, const char *ext);
 static int dispatch (const char *name, const struct stat *status, int type);
 static inline void escape (char *source);
 static void free_list (struct tag *head);
-static char *get_ext (const char *filename);
+static char* get_ext (const char *filename);
 static inline int str_compare(const char* a, const char* b);
-static char *str_replace (const char *orig, const char *rep, const char *with);
+static char* str_replace (const char *orig, const char *rep, const char *with);
 static inline void usage ();
-
