@@ -62,22 +62,22 @@ static int verbose = 0, copy = 1;
 static char *source_path;
 static char *dest_path;
 static char *format = "%artist/%album/%track - %title";
-struct tag{
-	const char *place_holder;
-	const char *value;
-	struct tag *next;
+struct tag {
+        const char *place_holder;
+        const char *value;
+        struct tag *next;
 };
 
-static int _copy (const char *src, const char *dest);
-static int _mkdirs (const char *path);
-static int _mkdir (const char *path);
-static struct tag* append_tag (struct tag *llist, const char *holder, const
-		char *value);
-static char* build_path_from_tag (const char *path, const char *ext);
-static int dispatch (const char *name, const struct stat *status, int type);
-static inline void escape (char *source);
-static void free_list (struct tag *head);
-static char* get_ext (const char *filename);
-static inline int str_compare(const char* a, const char* b);
-static char* str_replace (const char *orig, const char *rep, const char *with);
-static inline void usage ();
+static int _copy(const char *src, const char *dest);
+static int _mkdirs(const char *path);
+static int _mkdir(const char *path);
+static struct tag *append_tag(struct tag *llist, const char *holder, const
+                              char *value);
+static char *build_path_from_tag(const char *path, const char *ext);
+static int dispatch(const char *name, const struct stat *status, int type);
+static inline void escape(char *source);
+static void free_list(struct tag *head);
+static char *get_ext(const char *filename);
+static inline int str_compare(const char *a, const char *b);
+static char *str_replace(const char *orig, const char *rep, const char *with);
+static inline void usage();
