@@ -533,14 +533,16 @@ str_compare(const char *a, const char *b)
 static char *
 str_replace(const char *orig, const char *rep, const char *with)
 {
-        char *result;           // the return string
-        char *ins;              // the next insert point
-        char *tmp;              // varies
-        int len_orig;           // length of origin
-        int len_rep;            // length of rep
-        int len_with;           // length of with
-        int len_front;          // distance between rep and end of last rep
-        int count;              // number of replacements
+        char *result = NULL;        // the return string
+        char *ins = NULL;           // the next insert point
+        char *tmp = NULL;           // varies
+        int len_orig = 0;           // length of origin
+        int len_rep = 0;            // length of rep
+        int len_with = 0;           // length of with
+        int len_front = 0;          // distance between rep and end of last rep
+        int count = 0;              // number of replacements
+        int count_cpy = 0;
+        int char_left = 0;
 
         if (!orig) {
                 fprintf(stderr, "ERROR: There is no string to look at.\n");
@@ -564,7 +566,7 @@ str_replace(const char *orig, const char *rep, const char *with)
                 fprintf(stderr, "ERROR: Could not strdup 'with_cpy'.\n");
                 return NULL;
         }
-        // We don't need to espace if '/' is not present in with_cpy
+        // We don't need to escape if '/' is not present in with_cpy
         if (strchr(with_cpy, '/') != NULL)
                 escape(with_cpy);
         len_with = strlen(with_cpy);
@@ -579,13 +581,14 @@ str_replace(const char *orig, const char *rep, const char *with)
         //    tmp points to the end of the result string
         //    ins points to the next occurrence of rep in orig
         //    orig points to the remainder of orig after "end of rep"
-        tmp = result = malloc(len_orig + (len_with - len_rep) * count + 1);
+        tmp = result = calloc(len_orig + (len_with - len_rep) * count + 1, 1);
         if (!result || !tmp) {
                 free(with_cpy);
                 return NULL;
         }
 
         /* Replace all the occurences */
+        count_cpy = count;
         while (count--) {
                 ins = strstr(orig, rep);
                 len_front = ins - orig;
@@ -601,7 +604,9 @@ str_replace(const char *orig, const char *rep, const char *with)
         }
 
         /* Copy from the last "end of rep" to the end of orig into tmp */
-        strcpy(tmp, orig);
+        char_left =
+            len_orig - strlen(result) - (len_rep - len_with) * count_cpy;
+        strncpy(tmp, orig, char_left);
 
         free(with_cpy);
         return result;
