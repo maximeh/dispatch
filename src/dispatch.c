@@ -31,16 +31,15 @@
 int
 main(int argc, char **argv)
 {
-        int c, exit_code = EXIT_SUCCESS;
-        while ((c = getopt(argc, argv, "hf:vm")) != -1) {
+        int c;
+        while ((c = getopt(argc, argv, "dhf:m")) != -1) {
                 switch (c) {
                 case 'f':
                         /* format string specified */
                         format = optarg;
                         break;
-                case 'v':
-                        /* verbose mode */
-                        verbose = 1;
+                case 'd':
+                        ++_debug;
                         break;
                 case 'm':
                         /* move instead of copy */
@@ -60,76 +59,89 @@ main(int argc, char **argv)
                 exit(EXIT_SUCCESS);
         }
 
-        source_path = strndup(argv[0], PATH_MAX);
-        if (source_path == NULL)
-                err(EXIT_FAILURE,
-                    "ERROR: Could not copy %s into 'source_path'\n", argv[0]);
-
         dest_path = strndup(argv[1], PATH_MAX);
-        if (dest_path == NULL) {
-                free(source_path);
+        if (!dest_path) {
                 err(EXIT_FAILURE, "ERROR: Could not copy %s into 'dest_path'\n",
                     argv[1]);
         }
 
         /* List directory recursively */
-        log("Searching in '%s'\n", source_path);
-        log("Will move in '%s'\n", dest_path);
-        if (ftw(source_path, dispatch, 20) == -1)
-                perror("ftw");
+        DPRINTF(1, "Searching in '%s'\n", argv[0]);
+        DPRINTF(1, "Will move in '%s'\n", argv[1]);
 
-        free(source_path);
+        FTS *ftsp;
+        FTSENT *p, *chp;
+        char *source_argv[] = { argv[0], NULL };
+        const int fts_options = FTS_COMFOLLOW | FTS_LOGICAL | FTS_NOCHDIR;
+
+        ftsp = fts_open(source_argv, fts_options, NULL);
+        if (!ftsp) {
+                perror("fts_open");
+                exit(EXIT_FAILURE);
+        }
+
+        chp = fts_children(ftsp, 0);
+        if (!chp) {
+                exit(EXIT_FAILURE);
+        }
+
+        while ((p = fts_read(ftsp))) {
+                if (p->fts_info == FTS_F) {
+                        dispatch(p->fts_path);
+                }
+        }
+        fts_close(ftsp);
+
         free(dest_path);
-        exit(exit_code);
+        exit(EXIT_SUCCESS);
 }
 
 int
-dispatch(const char *path, const struct stat *status, int type)
+dispatch(const char *path)
 {
-        char *formated_dir_path = NULL;
-        char *formated_path = NULL;
-        char *formated_path_copy = NULL;
-        char *ext = NULL;
+        char *formated_dir_path;
+        char *formated_path;
+        char *formated_path_copy;
+        char *ext;
+        int ret = -1;
 
-        /* We only want to treat regular file */
-        /* We can't return non zero here, otherwise ftw, our caller, would exit */
-        if (type == FTW_NS || type != FTW_F)
-                return 0;
-
-        log("\nCurrent path is: '%s'\n", path);
+        DPRINTF(1, "\nCurrent path is: '%s'\n", path);
 
         /* Test if the file is valid */
         /* we got the extension of each file */
-        if ((ext = get_ext(path)) == NULL) {
-                log("%s doesn't have a valid extension.\n", path);
+        ext = get_ext(path);
+        if (!ext) {
+                DPRINTF(1, "%s doesn't have a valid extension.\n", path);
                 /* Again, we can't return -1 or the whole listing will stop */
                 return 0;
         }
-        log("Extension: '%s'\n", ext);
+        DPRINTF(1, "Extension: '%s'\n", ext);
 
         /* Grab id3tag for each filename  */
-        if ((formated_path = build_path_from_tag(path, ext)) == NULL) {
+        formated_path = build_path_from_tag(path, ext);
+        if (!formated_path) {
                 fprintf(stderr, "ERROR: Could not read tag.\n");
                 return -1;
         };
-        log("Formated path is: %s\n", formated_path);
+        DPRINTF(1, "Formated path is: %s\n", formated_path);
 
-        if ((formated_path_copy = strdup(formated_path)) == NULL) {
+        formated_path_copy = strdup(formated_path);
+        if (!formated_path_copy) {
                 fprintf(stderr, "ERROR: Could not duplicate %s.\n",
                         formated_path);
                 goto free_exit;
         }
 
         formated_dir_path = dirname(formated_path_copy);
-        if (formated_dir_path == NULL) {
+        if (!formated_dir_path) {
                 fprintf(stderr, "ERROR: Could not obtain 'dirname' of %s.\n",
                         path);
                 goto free_exit;
         }
-        log("dirname: '%s'\n", formated_dir_path);
+        DPRINTF(1, "dirname: '%s'\n", formated_dir_path);
 
         /* Create our dir if necessary */
-        log("Creating tree : '%s'\n", formated_dir_path);
+        DPRINTF(1, "Creating tree : '%s'\n", formated_dir_path);
         if (_mkdirs(formated_dir_path) == -1) {
                 fprintf(stderr, "ERROR: '%s' already exists.\n",
                         formated_dir_path);
@@ -146,30 +158,30 @@ dispatch(const char *path, const struct stat *status, int type)
                 remove(path);
         }
 
-        free(formated_path);
-        free(formated_path_copy);
-        return 0;
+        ret = 0;
+        goto free_exit;
 
  free_exit:
         free(formated_path);
         free(formated_path_copy);
-        return -1;
+        return ret;
 }
 
 static char *
 build_path_from_tag(const char *file_path, const char *ext)
 {
-        struct tag *tag_list = NULL, *head = NULL;
-        char *full_formated_path = NULL;
-        char *formated_path = NULL;
-        char *temp_path = NULL;
+        struct tag *tag_list, *head;
+        char *full_formated_path;
+        char *formated_path;
+        char *temp_path;
         char track_str[3];
         char year_str[5];
         int track;
         TagLib_File *file;
         TagLib_Tag *tag;
 
-        if ((file = taglib_file_new(file_path)) == NULL) {
+        file = taglib_file_new(file_path);
+        if (!file) {
                 fprintf(stderr,
                         "ERROR: The type of %s cannot be determined or the file "
                         "cannot be opened\n", file_path);
@@ -182,7 +194,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         }
 
         tag = taglib_file_tag(file);
-        if (tag == NULL) {
+        if (!tag) {
                 fprintf(stderr, "ERROR: The file %s is not valid.\n",
                         file_path);
                 goto free_taglib;
@@ -190,14 +202,14 @@ build_path_from_tag(const char *file_path, const char *ext)
 
         /* Create formated_path using tag info of file_path */
         formated_path = strdup(format);
-        if (formated_path == NULL) {
+        if (!formated_path) {
                 fprintf(stderr, "ERROR: Could not duplicate the string '%s'.\n",
                         file_path);
                 goto free_taglib;
         }
 
         tag_list = calloc(1, sizeof(struct tag));
-        if (tag_list == NULL) {
+        if (!tag_list) {
                 fprintf(stderr, "ERROR: Could not malloc 'tag_list'.\n");
                 goto free_taglib;
         }
@@ -205,29 +217,29 @@ build_path_from_tag(const char *file_path, const char *ext)
         tag_list->place_holder = "%album";
         tag_list->value = taglib_tag_album(tag);
         tag_list->next = NULL;
-        log("album\t-\t\"%s\"\n", taglib_tag_album(tag));
+        DPRINTF(2, "album\t-\t\"%s\"\n", taglib_tag_album(tag));
 
         // Keep a track of the head
         head = tag_list;
 
         tag_list = append_tag(tag_list, "%artist", taglib_tag_artist(tag));
-        if (tag_list == NULL) {
+        if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%artist' to 'tag_list'.\n");
                 goto free_taglib;
         }
-        log("artist\t-\t\"%s\"\n", taglib_tag_artist(tag));
+        DPRINTF(2, "artist\t-\t\"%s\"\n", taglib_tag_artist(tag));
 
         tag_list = append_tag(tag_list, "%title", taglib_tag_title(tag));
-        if (tag_list == NULL) {
+        if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%title' to 'tag_list'.\n");
                 goto free_taglib;
         }
-        log("title\t-\t\"%s\"\n", taglib_tag_title(tag));
+        DPRINTF(2, "title\t-\t\"%s\"\n", taglib_tag_title(tag));
 
         track = taglib_tag_track(tag);
-        log("track\t-\t\"%02i\"\n", track);
+        DPRINTF(2, "track\t-\t\"%02i\"\n", track);
 
         if (sprintf(track_str, track < 10 ? "0%d" : "%d", track) < 0) {
                 fprintf(stderr, "ERROR: Could not add leading '0' to %d.\n",
@@ -236,13 +248,13 @@ build_path_from_tag(const char *file_path, const char *ext)
         }
 
         tag_list = append_tag(tag_list, "%track", track_str);
-        if (tag_list == NULL) {
+        if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%track' to 'tag_list'.\n");
                 goto free_taglib;
         }
 
-        log("year\t-\t\"%d\"\n", taglib_tag_year(tag));
+        DPRINTF(2, "year\t-\t\"%d\"\n", taglib_tag_year(tag));
         if (sprintf(year_str, "%d", taglib_tag_year(tag)) < 0) {
                 fprintf(stderr, "ERROR: Could not add leading '0' to %d.\n",
                         track);
@@ -250,7 +262,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         }
 
         tag_list = append_tag(tag_list, "%year", year_str);
-        if (tag_list == NULL) {
+        if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%year' to 'tag_list'\n");
                 goto free_taglib;
@@ -260,14 +272,14 @@ build_path_from_tag(const char *file_path, const char *ext)
         tag_list = head;
 
         /* Loop through the tag_list */
-        while (tag_list->next != NULL) {
-                log("Search %s => %s\n", tag_list->place_holder,
-                    tag_list->value);
+        while (tag_list->next) {
+                DPRINTF(3, "Search %s => %s\n", tag_list->place_holder,
+                        tag_list->value);
 
                 /* Replace place_holder with its value in formated_path */
                 temp_path = str_replace(formated_path, tag_list->place_holder,
                                         tag_list->value);
-                if (temp_path == NULL) {
+                if (!temp_path) {
                         fprintf(stderr,
                                 "ERROR: str_replace encountered an error.\n");
                         goto free_taglib;
@@ -282,7 +294,7 @@ build_path_from_tag(const char *file_path, const char *ext)
                 /* Since temp_path is allocated by str_replace, it must be freed */
                 free(temp_path);
 
-                log("actual path - \"%s\"\n", formated_path);
+                DPRINTF(2, "actual path - \"%s\"\n", formated_path);
                 tag_list = tag_list->next;
         }
 
@@ -296,7 +308,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         full_formated_path =
             malloc(((strlen(dest_path) + strlen(formated_path) +
                      strlen(ext)) * sizeof(char)) + 3);
-        if (full_formated_path == NULL) {
+        if (!full_formated_path) {
                 fprintf(stderr,
                         "ERROR: Could not malloc 'full_formated_path'.\n");
                 goto free_formated_path;
@@ -310,7 +322,7 @@ build_path_from_tag(const char *file_path, const char *ext)
                 goto free_formated_path;
         }
 
-        log("Final path is: %s\n", full_formated_path);
+        DPRINTF(2, "Final path is: %s\n", full_formated_path);
         free(formated_path);
 
         return full_formated_path;
@@ -333,11 +345,10 @@ _mkdirs(const char *path)
         // which strips the last '/'.
         char *opath;
         char *p;
-        size_t len;
-        len = strlen(path);
+        const size_t len = strlen(path);
 
         opath = malloc(len + 1);
-        if (opath == NULL) {
+        if (!opath) {
                 perror("_mkdirs");
                 return -1;
         }
@@ -366,7 +377,7 @@ static int
 _mkdir(const char *path)
 {
         struct stat path_stat;
-        int error = stat(path, &path_stat);
+        const int error = stat(path, &path_stat);
 
         if (!error && !S_ISDIR(path_stat.st_mode)) {
                 fprintf(stderr, "ERROR: %s is not a directory.\n", path);
@@ -376,7 +387,7 @@ _mkdir(const char *path)
         if (error == -1) {
                 if (ENOENT != errno)
                         goto error_mkdir;
-                if (mkdir(path, S_IRWXU) != 0)
+                if (mkdir(path, S_IRWXU))
                         goto error_mkdir;
         }
         return 0;
@@ -396,12 +407,12 @@ _copy(const char *src, const char *dest)
         struct stat in_st;
 
         in_fd = fopen(src, "rb");
-        if (in_fd == NULL) {
+        if (!in_fd) {
                 perror("_copy");
                 return 1;
         }
 
-        if (fstat(fileno(in_fd), &in_st) != 0) {
+        if (fstat(fileno(in_fd), &in_st)) {
                 fclose(in_fd);
                 perror("_copy");
                 return 1;
@@ -409,7 +420,7 @@ _copy(const char *src, const char *dest)
         bytes_left = in_st.st_size;
 
         out_fd = fopen(dest, "w+b");
-        if (out_fd == NULL) {
+        if (!out_fd) {
                 fclose(in_fd);
                 perror("_copy");
                 return 1;
@@ -417,13 +428,12 @@ _copy(const char *src, const char *dest)
 #ifdef _LINUX
         size_t bytes_copied;
 
-        if ((err =
-             posix_fadvise(fileno(in_fd), 0, 0, POSIX_FADV_SEQUENTIAL)) != 0) {
+        if ((err = posix_fadvise(fileno(in_fd), 0, 0, POSIX_FADV_SEQUENTIAL))) {
                 fprintf(stderr, "ERROR: %s\n", strerror(err));
                 goto close_fds;
         }
 
-        if ((err = posix_fallocate(fileno(out_fd), 0, bytes_left)) != 0) {
+        if ((err = posix_fallocate(fileno(out_fd), 0, bytes_left))) {
                 fprintf(stderr, "ERROR: %s\n", strerror(err));
                 goto close_fds;
         }
@@ -502,7 +512,7 @@ get_ext(const char *filename)
 {
         /* Find the extension */
         char *ext = strrchr(filename, '.');
-        if (ext == NULL)
+        if (!ext)
                 return NULL;
 
         /* Avoid the dot */
@@ -511,10 +521,9 @@ get_ext(const char *filename)
         for (; *ext; ++ext)
                 *ext = tolower(*ext);
 
-        if (0 != str_compare(ext_dup, "mp3") &&
-            0 != str_compare(ext_dup, "m4a") &&
-            0 != str_compare(ext_dup, "flac") &&
-            0 != str_compare(ext_dup, "ogg"))
+        if (str_compare(ext_dup, "mp3") &&
+            str_compare(ext_dup, "m4a") &&
+            str_compare(ext_dup, "flac") && str_compare(ext_dup, "ogg"))
                 return NULL;
 
         return ext_dup;
@@ -533,14 +542,14 @@ str_compare(const char *a, const char *b)
 static char *
 str_replace(const char *orig, const char *rep, const char *with)
 {
-        char *result = NULL;        // the return string
-        char *ins = NULL;           // the next insert point
-        char *tmp = NULL;           // varies
-        int len_orig = 0;           // length of origin
-        int len_rep = 0;            // length of rep
-        int len_with = 0;           // length of with
-        int len_front = 0;          // distance between rep and end of last rep
-        int count = 0;              // number of replacements
+        char *result;           // the return string
+        char *ins;              // the next insert point
+        char *tmp;              // varies
+        int len_orig = 0;       // length of origin
+        int len_rep = 0;        // length of rep
+        int len_with = 0;       // length of with
+        int len_front = 0;      // distance between rep and end of last rep
+        int count = 0;          // number of replacements
         int count_cpy = 0;
         int char_left = 0;
 
@@ -562,12 +571,12 @@ str_replace(const char *orig, const char *rep, const char *with)
         len_orig = strlen(orig);
 
         char *with_cpy = strdup(with);
-        if (with_cpy == NULL) {
+        if (!with_cpy) {
                 fprintf(stderr, "ERROR: Could not strdup 'with_cpy'.\n");
                 return NULL;
         }
         // We don't need to escape if '/' is not present in with_cpy
-        if (strchr(with_cpy, '/') != NULL)
+        if (strchr(with_cpy, '/'))
                 escape(with_cpy);
         len_with = strlen(with_cpy);
 
@@ -593,17 +602,18 @@ str_replace(const char *orig, const char *rep, const char *with)
                 ins = strstr(orig, rep);
                 len_front = ins - orig;
 
-                // Copy up to the first rep to tmp, and make tmp point to its own end.
+                // Copy up to the first rep to tmp, and make tmp point to its
+                // own end.
                 tmp = strncpy(tmp, orig, len_front) + len_front;
 
-                /* Append to tmp the string to replace with, and make tmp point to its
-                   own end. */
+                // Append to tmp the string to replace with, and make tmp point
+                // to its own end.
                 tmp = strncpy(tmp, with_cpy, len_with) + len_with;
 
                 orig += len_front + len_rep;    // move to next "end of rep"
         }
 
-        /* Copy from the last "end of rep" to the end of orig into tmp */
+        // Copy from the last "end of rep" to the end of orig into tmp
         char_left =
             len_orig - strlen(result) - (len_rep - len_with) * count_cpy;
         strncpy(tmp, orig, char_left);
@@ -627,7 +637,7 @@ append_tag(struct tag *llist, const char *place_holder, const char *value)
 {
         /* Create a new element */
         struct tag *new = malloc(sizeof(struct tag));
-        if (new == NULL) {
+        if (!new) {
                 fprintf(stderr, "ERROR: Could not malloc tag 'new'.\n");
                 return NULL;
         }
@@ -636,10 +646,10 @@ append_tag(struct tag *llist, const char *place_holder, const char *value)
         new->value = value;
         new->next = NULL;
 
-        /* Put the new element at the end of the list */
+        // Put the new element at the end of the list
         llist->next = new;
 
-        /* Return the new end of the list */
+        // Return the new end of the list
         return llist->next;
 }
 
@@ -648,9 +658,10 @@ free_list(struct tag *head)
 {
         struct tag *tmp;
 
-        /* Loop through the list to free each tag */
-        while (head != NULL) {
-                log("Freeing %s => %s\n", head->place_holder, head->value);
+        // Loop through the list to free each tag
+        while (head) {
+                DPRINTF(2, "Freeing %s => %s\n", head->place_holder,
+                        head->value);
                 /* Keep current element */
                 tmp = head;
                 /* Move the head to the next element */
@@ -664,8 +675,9 @@ static void
 usage(void)
 {
         (void)fprintf(stdout,
-                      "dispatch [-h] [-v] [-m] [-f FORMAT] SOURCE DEST\n");
-        fputs("\t-h\t\tThis usage statement\n" "\t-v\t\tVerbose output\n"
+                      "dispatch [-h] [-d] [-m] [-f FORMAT] SOURCE DEST\n");
+        fputs("\t-h\t\tThis usage statement\n"
+              "\t-d\t\tDebug output (-dd for more, ...)\n"
               "\t-m\t\tUse this option to move your files to DESTINATION\n"
               "\t\t\tinstead of copying them (default)\n"
               "\t-f\t\tDefine a path format (only the following tag are supported)\n"

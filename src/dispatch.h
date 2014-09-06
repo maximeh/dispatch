@@ -28,9 +28,13 @@
 
 #pragma once
 
-#define _XOPEN_SOURCE 700
 #define BUFFER_SIZE 16384
-#define log(fmt, ...) if (verbose == 1) fprintf (stdout, fmt, ## __VA_ARGS__)
+
+#define DPRINTF(level, ...)                             \
+	do {                                            \
+                if (_debug >= level)                    \
+                        printf(__VA_ARGS__);            \
+        } while(0)
 
 #if _APPLE
 #include <copyfile.h>
@@ -40,7 +44,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <ftw.h>
+#include <fts.h>
 #include <getopt.h>
 #include <libgen.h>
 #ifdef _LINUX
@@ -52,16 +56,16 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #ifdef _LINUX
 #include <sys/sendfile.h>
 #endif
 #include <taglib/tag_c.h>
 #include <unistd.h>
 
-static int verbose = 0, copy = 1;
-static char *source_path;
-static char *dest_path;
+static int _debug = 0, copy = 1;
 static char *format = "%artist/%album/%track - %title";
+static char *dest_path;
 struct tag {
         const char *place_holder;
         const char *value;
@@ -74,7 +78,7 @@ static int _mkdir(const char *path);
 static struct tag *append_tag(struct tag *llist, const char *holder, const
                               char *value);
 static char *build_path_from_tag(const char *path, const char *ext);
-static int dispatch(const char *name, const struct stat *status, int type);
+static int dispatch(const char *name);
 static inline void escape(char *source);
 static void free_list(struct tag *head);
 static char *get_ext(const char *filename);
