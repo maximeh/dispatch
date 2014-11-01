@@ -226,6 +226,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%artist' to 'tag_list'.\n");
+                free_list(head);
                 goto free_taglib;
         }
         DPRINTF(2, "artist\t-\t\"%s\"\n", taglib_tag_artist(tag));
@@ -234,6 +235,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%title' to 'tag_list'.\n");
+                free_list(head);
                 goto free_taglib;
         }
         DPRINTF(2, "title\t-\t\"%s\"\n", taglib_tag_title(tag));
@@ -244,6 +246,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         if (sprintf(track_str, track < 10 ? "0%d" : "%d", track) < 0) {
                 fprintf(stderr, "ERROR: Could not add leading '0' to %d.\n",
                         track);
+                free_list(head);
                 goto free_taglib;
         }
 
@@ -251,6 +254,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%track' to 'tag_list'.\n");
+                free_list(head);
                 goto free_taglib;
         }
 
@@ -258,6 +262,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         if (sprintf(year_str, "%d", taglib_tag_year(tag)) < 0) {
                 fprintf(stderr, "ERROR: Could not add leading '0' to %d.\n",
                         track);
+                free_list(head);
                 goto free_taglib;
         }
 
@@ -265,6 +270,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         if (!tag_list) {
                 fprintf(stderr,
                         "ERROR: Could not append '%%year' to 'tag_list'\n");
+                free_list(head);
                 goto free_taglib;
         }
 
@@ -282,6 +288,7 @@ build_path_from_tag(const char *file_path, const char *ext)
                 if (!temp_path) {
                         fprintf(stderr,
                                 "ERROR: str_replace encountered an error.\n");
+                        free_list(head);
                         goto free_taglib;
                 }
                 /* The formated_path pointer will be overwritten by the next
@@ -332,6 +339,7 @@ build_path_from_tag(const char *file_path, const char *ext)
         return NULL;
 
  free_taglib:
+        taglib_tag_free_strings();
         taglib_file_free(file);
         return NULL;
 
