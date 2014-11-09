@@ -410,26 +410,26 @@ static int
 _copy(const char *src, const char *dest)
 {
         int err = 0;
-        FILE *in_fd, *out_fd;
+        int in_fd, out_fd;
         size_t bytes_left;
         struct stat in_st;
 
-        in_fd = fopen(src, "rb");
-        if (!in_fd) {
+        in_fd = open(src, O_RDONLY);
+        if (in_fd == -1) {
                 perror("_copy");
                 return 1;
         }
 
-        if (fstat(fileno(in_fd), &in_st)) {
-                fclose(in_fd);
+        if (fstat(in_fd, &in_st)) {
+                close(in_fd);
                 perror("_copy");
                 return 1;
         }
         bytes_left = in_st.st_size;
 
-        out_fd = fopen(dest, "w+b");
-        if (!out_fd) {
-                fclose(in_fd);
+        out_fd = open(dest, O_WRONLY | O_CREAT);
+        if (out_fd == -1) {
+                close(in_fd);
                 perror("_copy");
                 return 1;
         }
@@ -437,40 +437,34 @@ _copy(const char *src, const char *dest)
         size_t bytes_copied;
         off_t offset = 0;
 
-        if ((err =
-             posix_fadvise(fileno(in_fd), 0, bytes_left,
-                           POSIX_FADV_WILLNEED))) {
+        if ((err = posix_fadvise(in_fd, 0, bytes_left, POSIX_FADV_WILLNEED))) {
                 fprintf(stderr, "ERROR: %s\n", strerror(err));
                 goto close_fds;
         }
 
-        if ((err =
-             posix_fadvise(fileno(in_fd), 0, bytes_left,
-                           POSIX_FADV_SEQUENTIAL))) {
+        if ((err = posix_fadvise(in_fd, 0, bytes_left, POSIX_FADV_SEQUENTIAL))) {
                 fprintf(stderr, "ERROR: %s\n", strerror(err));
                 goto close_fds;
         }
 
-        if ((err = posix_fallocate(fileno(out_fd), 0, bytes_left))) {
+        if ((err = posix_fallocate(out_fd, 0, bytes_left))) {
                 fprintf(stderr, "ERROR: %s\n", strerror(err));
                 goto close_fds;
         }
 
         while (offset < bytes_left) {
-                if (sendfile
-                    (fileno(out_fd), fileno(in_fd), &offset,
-                     bytes_left - offset) == -1) {
+                if (sendfile(out_fd, in_fd, &offset, bytes_left - offset) == -1) {
                         if (errno != EINTR)
                                 goto close_fds;
                         continue;
                 }
         }
-        bytes_copied = sendfile(fileno(out_fd), fileno(in_fd), 0, bytes_left);
+        bytes_copied = sendfile(out_fd, in_fd, 0, bytes_left);
         if (bytes_copied != bytes_left)
                 goto close_fds;
 #elif _APPLE
         /* Copy the data, extended attributes and ACL */
-        err = fcopyfile(fileno(in_fd), fileno(out_fd), NULL, COPYFILE_DATA
+        err = fcopyfile(in_fd, out_fd, NULL, COPYFILE_DATA
                         | COPYFILE_XATTR | COPYFILE_ACL);
         if (err < 0)
                 goto close_fds;
@@ -485,12 +479,12 @@ _copy(const char *src, const char *dest)
         // Our buffer is as large as the size of the whole chunk we want to copy
         // Do it directly, no need to buffer this.
         if (buf_size == bytes_left) {
-                if (fread(buf, bytes_left, 1, in_fd) != 1) {
+                if (read(in_fd, buf, bytes_left) != 1) {
                         fprintf(stderr, "ERROR: Could not read %zu bytes.\n",
                                 bytes_left);
                         goto close_fds;
                 }
-                if (fwrite(buf, bytes_left, 1, out_fd) != 1) {
+                if (write(out_fd, buf, bytes_left) != 1) {
                         fprintf(stderr, "ERROR: Could not write %zu bytes.\n",
                                 bytes_left);
                         goto close_fds;
@@ -498,8 +492,8 @@ _copy(const char *src, const char *dest)
                 return 0;
         }
 
-        while (fread(buf, 1, buf_size, in_fd) == buf_size) {
-                if (fwrite(buf, 1, buf_size, out_fd) != buf_size) {
+        while (read(in_fd, buf, buf_size) == buf_size) {
+                if (write(out_fd, buf, buf_size) != buf_size) {
                         fprintf(stderr,
                                 "ERROR: Could not write chunk of %zu bytes.\n",
                                 buf_size);
@@ -509,13 +503,13 @@ _copy(const char *src, const char *dest)
         }
 
         // Write last buffer
-        if (fread(buf, 1, bytes_left, in_fd)) {
+        if (read(in_fd, buf, bytes_left)) {
                 fprintf(stderr,
                         "ERROR: Could not read last chunk of %zu bytes.\n",
                         bytes_left);
                 goto close_fds;
         }
-        if (fwrite(buf, 1, bytes_left, out_fd) != bytes_left) {
+        if (write(out_fd, buf, bytes_left) != bytes_left) {
                 fprintf(stderr,
                         "ERROR: Could not write last chunk of %zu bytes.\n",
                         bytes_left);
@@ -523,13 +517,13 @@ _copy(const char *src, const char *dest)
         }
 #endif
 
-        fclose(in_fd);
-        fclose(out_fd);
+        close(in_fd);
+        close(out_fd);
         return 0;
 
  close_fds:
-        fclose(in_fd);
-        fclose(out_fd);
+        close(in_fd);
+        close(out_fd);
         perror("_copy");
         return 1;
 }
