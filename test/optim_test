@@ -6,7 +6,11 @@ sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
 
 echo "COPYING FILES"
 grep '^Cached:' /proc/meminfo
-time -f "%E real, %U user, %S sys" $BASEDIR/../dispatch $opts $BASEDIR/data_src $BASEDIR/data_dest
+start=$(date +%s%N)
+$BASEDIR/../dispatch $BASEDIR/data_src $BASEDIR/data_dest
+stop=$(date +%s%N)
+diff=$((stop-start))
+echo "Took: $diff ns ( $(($diff/1000000)) ms)"
 grep '^Cached:' /proc/meminfo
 
 # Cleanup
@@ -21,7 +25,11 @@ echo "MOVING FILES"
 cp -a $BASEDIR/data_src $BASEDIR/data_move
 
 grep '^Cached:' /proc/meminfo
-time -f "%E real, %U user, %S sys" ./dispatch -m $BASEDIR/data_move $BASEDIR/data_dest
+start=$(date +%s%N)
+$BASEDIR/../dispatch -m $BASEDIR/data_move $BASEDIR/data_dest
+stop=$(date +%s%N)
+diff=$((stop-start))
+echo "Took: $diff ns ( $(($diff/1000000)) ms)"
 grep '^Cached:' /proc/meminfo
 
 # Cleanup
@@ -35,7 +43,11 @@ echo "==============================================="
 echo "CP"
 
 grep '^Cached:' /proc/meminfo
-time -f "%E real, %U user, %S sys" cp -a $BASEDIR/data_src $BASEDIR/data_move
+start=$(date +%s%N)
+cp -a $BASEDIR/data_src $BASEDIR/data_move
+stop=$(date +%s%N)
+diff=$((stop-start))
+echo "Took: $diff ns ( $(($diff/1000000)) ms)"
 grep '^Cached:' /proc/meminfo
 
 # Cleanup
