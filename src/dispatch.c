@@ -435,8 +435,18 @@ _copy(const char *src, const char *dest)
         }
 #ifdef _LINUX
         size_t bytes_copied;
+        off_t offset = 0;
 
-        if ((err = posix_fadvise(fileno(in_fd), 0, 0, POSIX_FADV_SEQUENTIAL))) {
+        if ((err =
+             posix_fadvise(fileno(in_fd), 0, bytes_left,
+                           POSIX_FADV_WILLNEED))) {
+                fprintf(stderr, "ERROR: %s\n", strerror(err));
+                goto close_fds;
+        }
+
+        if ((err =
+             posix_fadvise(fileno(in_fd), 0, bytes_left,
+                           POSIX_FADV_SEQUENTIAL))) {
                 fprintf(stderr, "ERROR: %s\n", strerror(err));
                 goto close_fds;
         }
@@ -446,6 +456,15 @@ _copy(const char *src, const char *dest)
                 goto close_fds;
         }
 
+        while (offset < bytes_left) {
+                if (sendfile
+                    (fileno(out_fd), fileno(in_fd), &offset,
+                     bytes_left - offset) == -1) {
+                        if (errno != EINTR)
+                                goto close_fds;
+                        continue;
+                }
+        }
         bytes_copied = sendfile(fileno(out_fd), fileno(in_fd), 0, bytes_left);
         if (bytes_copied != bytes_left)
                 goto close_fds;
