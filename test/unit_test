@@ -22,6 +22,15 @@ check_file ()
 echo "COPYING FILES"
 $BASEDIR/../dispatch $BASEDIR/data_src $BASEDIR/data_dest
 
+echo "-----------------------------------------------"
+echo "Source tree:"
+tree $BASEDIR/data_src/
+echo "-----------------------------------------------"
+echo "Resulting tree:"
+tree $BASEDIR/data_dest/
+echo "-----------------------------------------------"
+
+
 # data_src
 # ├── full
 # │   ├── 01 Back In Black.mp3
@@ -43,39 +52,4 @@ check_file "$src" "$dest"
 # Cleanup
 rm -Rf $BASEDIR/data_dest/AC_DC/
 rm -Rf $BASEDIR/data_dest/*.mp3
-
-echo "==============================================="
-
-echo "MOVING FILES"
-# Copy files to keep our test folder "untouched"
-cp -a $BASEDIR/data_src $BASEDIR/data_move
-
-# Startup
-./dispatch -m $BASEDIR/data_move $BASEDIR/data_dest
-
-# Use the file in data_src because we will need the checksum
-src="$BASEDIR/data_src/without_album_tag/01 Back In Black.mp3"
-dest="$BASEDIR/data_dest/AC_DC/01 - Back In Black.mp3"
-check_file "$src" "$dest"
-
-# Check that files doesn't exist anymore in data_move
-src="$BASEDIR/data_move/without_album_tag/01 Back In Black.mp3"
-[ -f "$src" ] && echo "File still exists :/ ($src)"
-
-echo "-----------------------------------------------"
-
-# Use the file in data_src because we will need the checksum
-src="$BASEDIR/data_src/without_album_tag/01 Back In Black.mp3"
-dest="$BASEDIR/data_dest/AC_DC/01 - Back In Black.mp3"
-check_file "$src" "$dest"
-
-# Check that files doesn't exist anymore in data_move
-src="$BASEDIR/data_move/without_album_tag/01 Back In Black.mp3"
-[ -f "$src" ] && echo "File still exists :/ ($src)"
-
-# Cleanup
-rm -Rf $BASEDIR/data_dest/AC_DC/
-rm -Rf $BASEDIR/data_dest/*.mp3
-rm -Rf $BASEDIR/data_move/
-
-
+rm -Rf $BASEDIR/data_dest/

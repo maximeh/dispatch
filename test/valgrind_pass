@@ -2,7 +2,7 @@
 
 # I never remember all the arguments, so here is a quick and dirty shell.
 BASEDIR=$(realpath $(dirname $0))
-VALGRIND_OPTS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes"
+VALGRIND_OPTS="--tool=memcheck --leak-check=yes --show-reachable=yes --num-callers=20 --track-fds=yes --track-origins=yes"
 
 valgrind $VALGRIND_OPTS $BASEDIR/../dispatch $BASEDIR/data_src $BASEDIR/data_dest
 
