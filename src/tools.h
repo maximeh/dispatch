@@ -26,62 +26,18 @@
  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#pragma once
+#define DEBUG
 
-#define BUFFER_SIZE 16384
-
+#ifdef DEBUG
+extern int _debug;
 #define DPRINTF(level, ...)                             \
 	do {                                            \
-                if (_debug >= level)                    \
-                        printf(__VA_ARGS__);            \
-        } while(0)
-
-#if _APPLE
-#include <copyfile.h>
+		if (_debug >= level)                    \
+			printf(__VA_ARGS__);            \
+	} while(0)
+#else
+#define DPRINTF(...) do {} while(0)
 #endif
-#include <ctype.h>
-#include <dirent.h>
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <fts.h>
-#include <getopt.h>
-#include <libgen.h>
-#ifdef _LINUX
-#include <linux/limits.h>
-#elif _APPLE
-#include <limits.h>
-#endif
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#ifdef _LINUX
-#include <sys/sendfile.h>
-#endif
-#include <taglib/tag_c.h>
-#include <unistd.h>
 
-static int _debug = 0, copy = 1;
-static char *format = "%artist/%album/%track - %title";
-static char *dest_path;
-struct tag {
-        const char *place_holder;
-        const char *value;
-        struct tag *next;
-};
-
-static int _copy(const char *src, const char *dest);
-static int _mkdirs(const char *path);
-static int _mkdir(const char *path);
-static struct tag *append_tag(struct tag *llist, const char *holder, const
-                              char *value);
-static char *build_path_from_tag(const char *path, const char *ext);
-static int dispatch(const char *name);
-static inline void escape(char *source);
-static void free_list(struct tag *head);
-static char *get_ext(const char *filename);
-static inline int str_compare(const char *a, const char *b);
-static char *str_replace(const char *orig, const char *rep, const char *with);
-static inline void usage();
+int append(char *dst, const char *fmt, ...);
+int append_esc(char *dst, const char *fmt, ...);
