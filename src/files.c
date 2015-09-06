@@ -71,7 +71,7 @@ get_filename_ext(const char *filename)
 }
 
 int
-copy(const char *src, const char *dest, size_t bytes)
+copy(const char *src, const char *dest, off_t filesize)
 {
 	int err = 0;
 	int in, out;
@@ -89,26 +89,28 @@ copy(const char *src, const char *dest, size_t bytes)
 		return 1;
 	}
 
-	if ((err = posix_fadvise(in, 0, bytes, POSIX_FADV_WILLNEED))) {
+	if ((err = posix_fadvise(in, 0, filesize, POSIX_FADV_WILLNEED))) {
 		fprintf(stderr, "ERROR: %s\n", strerror(err));
 		goto close_fds;
 	}
 
-	if ((err = posix_fadvise(in, 0, bytes, POSIX_FADV_SEQUENTIAL))) {
+	if ((err = posix_fadvise(in, 0, filesize, POSIX_FADV_SEQUENTIAL))) {
 		fprintf(stderr, "ERROR: %s\n", strerror(err));
 		goto close_fds;
 	}
 
-	if ((err = posix_fallocate(out, 0, bytes))) {
+	if ((err = posix_fallocate(out, 0, filesize))) {
 		fprintf(stderr, "ERROR: %s\n", strerror(err));
 		goto close_fds;
 	}
 
 	off_t ofs = 0;
-	while(ofs < bytes) {
-		if(sendfile(out, in, &ofs, bytes - ofs) == -1) {
-			if (errno == EINTR)
+	while(ofs < filesize) {
+		if(sendfile(out, in, &ofs, filesize - ofs) == -1) {
+			if (errno == EINTR) {
+				err = EINTR;
 				goto close_fds;
+			}
 			continue;
 		}
 	}
@@ -116,5 +118,5 @@ copy(const char *src, const char *dest, size_t bytes)
 close_fds:
 	close(in);
 	close(out);
-	return 0;
+	return err;
 }
