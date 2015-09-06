@@ -1,5 +1,5 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
-CFLAGS = -Wall -g -O3 -I/usr/include/taglib
+CFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused -Werror -Wwrite-strings -g -O3 -I/usr/include/taglib
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @TAGLIB_LIBS@ @TAGLIB_C_LIBS@
 CPPFLAGS = -I/usr/local/include -DVERSION=\"$(VERSION)\" -DPROG="\"$(PACKAGE)\"" @ARCH_DEFINES@
