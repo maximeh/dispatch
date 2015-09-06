@@ -59,9 +59,11 @@
 #endif
 
 int _debug = 0;
-static const char *allowed_extensions = "mp3m4aflacogg";
-static char format[PATH_MAX] = "%a/%A/%t - %T";
-static char destpath[PATH_MAX];
+static const char *ALLOWED_EXTENSIONS = "mp3m4aflacogg";
+static const char *DEFAULT_FMT = "%a/%A/%t - %T";
+
+static char *FMT = NULL;
+static char *DST = NULL;
 
 static void
 usage(void)
@@ -105,7 +107,7 @@ build_path_from_tag(const char *filepath, struct filename *fn)
 		goto free_taglib;
 	}
 
-	char *p = &format[0];
+	char *p = FMT;
 	while (*p) {
 		if (*p != '%') {
 			ret = append(fn, "%c", *p++);
@@ -184,7 +186,7 @@ dispatch_entry(const char *filepath, const struct stat *info,
 		}
 
 		/* Check that the extension is valid */
-		if (!strstr(allowed_extensions, extension)) {
+		if (!strstr(ALLOWED_EXTENSIONS, extension)) {
 			DPRINTF(1, "'%s' doesn't have a valid extension.\n"
 					"Valid extension are: "
 					"mp3, m4a, flac and ogg\n",
@@ -204,7 +206,7 @@ dispatch_entry(const char *filepath, const struct stat *info,
 		}
 
 		final_path = calloc(PATH_MAX, sizeof(char));
-		sprintf(final_path, "%s/%s.%s", destpath, fn.path, extension);
+		sprintf(final_path, "%s/%s.%s", DST, fn.path, extension);
 
 		free(fn.path);
 		fn.path = NULL;
@@ -233,7 +235,8 @@ main(int argc, char **argv)
 	while ((c = getopt(argc, argv, "dhf:")) != -1) {
 		switch (c) {
 		case 'f':
-			memcpy(&format[0], optarg, strlen(optarg));
+			FMT = calloc(strlen(optarg), sizeof(char));
+			memcpy(FMT, optarg, strlen(optarg));
 			break;
 		case 'd':
 			++_debug;
@@ -241,6 +244,7 @@ main(int argc, char **argv)
 		case 'h':
 		default:
 			usage();
+			free(FMT);
 			return EXIT_SUCCESS;
 		}
 	}
@@ -249,22 +253,35 @@ main(int argc, char **argv)
 
 	if (argc != 2) {
 		usage();
+		free(FMT);
 		return EXIT_FAILURE;
 	}
 
 	/* Invalid directory path? */
 	if (argv[0] == NULL || *argv[0] == '\0') {
 		usage();
+		free(FMT);
 		return EXIT_FAILURE;
 	}
 
 	DPRINTF(1, "Searching in '%s'\n", argv[0]);
 	DPRINTF(1, "Will move in '%s'\n", argv[1]);
 
-	memcpy(&destpath[0], argv[1], strlen(argv[1]));
+	DST = calloc(strlen(argv[1]), sizeof(char));
+	memcpy(DST, argv[1], strlen(argv[1]));
 
-	if (nftw(argv[0], dispatch_entry, USE_FDS, FTW_PHYS))
+	if (FMT == NULL) {
+		FMT = calloc(strlen(DEFAULT_FMT), sizeof(char));
+		memcpy(FMT, DEFAULT_FMT, strlen(DEFAULT_FMT));
+	}
+
+	if (nftw(argv[0], dispatch_entry, USE_FDS, FTW_PHYS)) {
+		free(FMT);
+		free(DST);
 		return EXIT_FAILURE;
+	}
 
+	free(FMT);
+	free(DST);
 	return EXIT_SUCCESS;
 }
