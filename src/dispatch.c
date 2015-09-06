@@ -60,7 +60,7 @@
 
 int _debug = 0;
 static const char *allowed_extensions = "mp3m4aflacogg";
-static char *format = "%a/%A/%t - %T";
+static char format[PATH_MAX] = "%a/%A/%t - %T";
 static char destpath[PATH_MAX];
 
 static void
@@ -151,8 +151,7 @@ int
 dispatch_entry(const char *filepath, const struct stat *info,
 		const int typeflag, struct FTW *pathinfo)
 {
-	/* const char *const filename = filepath + pathinfo->base; */
-	const double bytes = (double)info->st_size; /* Not exact if large! */
+	const off_t filesize = info->st_size;
 	const char *extension;
 	struct filename fn;
 	char *final_path;
@@ -228,40 +227,21 @@ dispatch_entry(const char *filepath, const struct stat *info,
 }
 
 int
-search_directory_tree(const char *const src, const char *dst)
-{
-	int result;
-
-	/* Invalid directory path? */
-	if (src == NULL || *src == '\0')
-		return errno = EINVAL;
-
-	result = nftw(src, dispatch_entry, USE_FDS, FTW_PHYS);
-	if (result >= 0)
-		errno = result;
-
-	return errno;
-}
-
-
-int
 main(int argc, char **argv)
 {
-	int exit_code = EXIT_SUCCESS;
 	int c;
 	while ((c = getopt(argc, argv, "dhf:")) != -1) {
 		switch (c) {
-			case 'f':
-				/* format string specified */
-				format = optarg;
-				break;
-			case 'd':
-				++_debug;
-				break;
-			case 'h':
-			default:
-				usage();
-				exit(exit_code);
+		case 'f':
+			memcpy(&format[0], optarg, strlen(optarg));
+			break;
+		case 'd':
+			++_debug;
+			break;
+		case 'h':
+		default:
+			usage();
+			return EXIT_SUCCESS;
 		}
 	}
 	argc -= optind;
@@ -269,20 +249,22 @@ main(int argc, char **argv)
 
 	if (argc != 2) {
 		usage();
-		exit(EXIT_SUCCESS);
+		return EXIT_FAILURE;
 	}
 
-	memcpy(&destpath[0], argv[1], strlen(argv[1]));
+	/* Invalid directory path? */
+	if (argv[0] == NULL || *argv[0] == '\0') {
+		usage();
+		return EXIT_FAILURE;
+	}
 
 	DPRINTF(1, "Searching in '%s'\n", argv[0]);
 	DPRINTF(1, "Will move in '%s'\n", argv[1]);
 
-	exit_code = search_directory_tree(argv[0], destpath);
-	if (exit_code) {
-		fprintf(stderr, "%s\n", strerror(errno));
-		goto fail;
-	}
+	memcpy(&destpath[0], argv[1], strlen(argv[1]));
 
-fail:
-	exit(exit_code);
+	if (nftw(argv[0], dispatch_entry, USE_FDS, FTW_PHYS))
+		return EXIT_FAILURE;
+
+	return EXIT_SUCCESS;
 }
