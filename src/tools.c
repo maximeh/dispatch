@@ -29,33 +29,43 @@
 #include <stdarg.h>  // for va_end, va_list, va_start
 #include <stdio.h>   // for vsprintf
 
+#include "tools.h"   // for filename
+
 int
-append(char *dst, const char *fmt, ...)
+append(struct filename *fn, const char *fmt, ...)
 {
 	va_list arg;
 	int ret;
 
 	va_start(arg, fmt);
-	ret = vsprintf(dst, fmt, arg);
+	ret = vsprintf(fn->path + fn->used, fmt, arg);
 	va_end(arg);
+	fn->used += ret;
+
+	if (ret > 0)
+		return 0;
 
 	return ret;
 }
 
 int
-append_esc(char *dst, const char *fmt, ...)
+append_esc(struct filename *fn, const char *fmt, ...)
 {
 	va_list arg;
 	int ret;
+	int cur = fn->used;
 
 	va_start(arg, fmt);
-	ret = vsprintf(dst, fmt, arg);
+	ret = vsprintf(fn->path + fn->used, fmt, arg);
 	va_end(arg);
+	fn->used += ret;
 
-	while (*dst!= '\0') {
-		if (*dst == '/')
-			*dst = '_';
-		++dst;
+	if (ret > 0)
+		ret = 0;
+
+	for (; cur < fn->used; ++cur) {
+		if (fn->path[cur] == '/')
+			fn->path[cur] = '_';
 	}
 
 	return ret;

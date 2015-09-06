@@ -39,5 +39,10 @@ extern int _debug;
 #define DPRINTF(...) do {} while(0)
 #endif
 
-int append(char *dst, const char *fmt, ...);
-int append_esc(char *dst, const char *fmt, ...);
+struct filename {
+	char *path;
+	int used;
+};
+
+int append(struct filename *fn, const char *fmt, ...);
+int append_esc(struct filename *fn, const char *fmt, ...);
