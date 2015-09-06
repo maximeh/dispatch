@@ -34,13 +34,13 @@
 #include <getopt.h>        // for getopt, optind, optarg
 #include <limits.h>        // for PATH_MAX
 #include <stdio.h>         // for fprintf, stderr, fputs, printf, sprintf, etc
-#include <stdlib.h>        // for exit, EXIT_SUCCESS
+#include <stdlib.h>        // for EXIT_SUCCESS
 #include <string.h>        // for memcpy, memset, strerror, strlen, strstr
 #include <sys/stat.h>      // for stat
 #include <taglib/tag_c.h>  // for taglib_file_free, taglib_file_is_valid, etc
 
 #include "files.h"         // for copy, get_filename_ext, mkdir_p
-#include "tools.h"         // for append_esc, DPRINTF, append
+#include "tools.h"         // for append_esc, DPRINTF, append, filename
 
 /* POSIX.1 says each process has at least 20 file descriptors.
  * Three of those belong to the standard streams.
@@ -80,65 +80,65 @@ usage(void)
 }
 
 static int
-build_path_from_tag(const char *filepath, char *tag_path)
+build_path_from_tag(const char *filepath, struct filename *fn)
 {
 	TagLib_File *file;
 	TagLib_Tag *tag;
-	int ret = 0;
+	int ret = -1;
 
 	file = taglib_file_new(filepath);
 	if (!file) {
 		fprintf(stderr, "'%s' type cannot be determined"
 				" or file cannot be opened.\n", filepath);
-		ret = -1;
 		goto free_taglib;
 
 	}
 
 	if (!taglib_file_is_valid(file)) {
 		fprintf(stderr, "The file %s is not valid\n", filepath);
-		ret = -1;
 		goto free_taglib;
 	}
 
 	tag = taglib_file_tag(file);
 	if (!tag) {
 		fprintf(stderr, "The file %s is not valid.\n", filepath);
-		ret = -1;
 		goto free_taglib;
 	}
 
-	char *p = format;
+	char *p = &format[0];
 	while (*p) {
 		if (*p != '%') {
-			tag_path += append(tag_path, "%c", *p++);
-			continue;
-		}
-		switch (*++p) {
+			ret = append(fn, "%c", *p++);
+		} else {
+			switch (*++p) {
 			case 'a':
-				tag_path += append_esc(tag_path, "%s",
+				ret = append_esc(fn, "%s",
 						taglib_tag_artist(tag));
 				break;
 			case 'A':
-				tag_path += append_esc(tag_path, "%s",
+				ret = append_esc(fn, "%s",
 						taglib_tag_album(tag));
 				break;
 			case 't':
-				tag_path += append_esc(tag_path, "%02d",
+				ret = append_esc(fn, "%02d",
 						taglib_tag_track(tag));
 				break;
 			case 'T':
-				tag_path += append_esc(tag_path, "%s",
+				ret = append_esc(fn, "%s",
 						taglib_tag_title(tag));
 				break;
 			case 'y':
-				tag_path += append_esc(tag_path, "%d",
+				ret = append_esc(fn, "%d",
 						taglib_tag_year(tag));
 				break;
 			default:
 				break;
+			}
+			++p;
 		}
-		++p;
+
+		if (ret)
+			goto free_taglib;
 	}
 
 free_taglib:
@@ -154,8 +154,8 @@ dispatch_entry(const char *filepath, const struct stat *info,
 	/* const char *const filename = filepath + pathinfo->base; */
 	const double bytes = (double)info->st_size; /* Not exact if large! */
 	const char *extension;
-	char tag_path[PATH_MAX];
-	char final_path[PATH_MAX];
+	struct filename fn;
+	char *final_path;
 
 	/* Don't bother to handle links */
 	if (typeflag == FTW_SL)
@@ -183,6 +183,7 @@ dispatch_entry(const char *filepath, const struct stat *info,
 					filepath);
 			return 0;
 		}
+
 		/* Check that the extension is valid */
 		if (!strstr(allowed_extensions, extension)) {
 			DPRINTF(1, "'%s' doesn't have a valid extension.\n"
@@ -191,17 +192,34 @@ dispatch_entry(const char *filepath, const struct stat *info,
 					filepath);
 			return 0;
 		}
-		/* Okey, so we are should be able to treat this file */
-		memset(&tag_path[0], 0, PATH_MAX);
-		build_path_from_tag(filepath, &tag_path[0]);
-		sprintf(final_path, "%s/%s.%s", destpath, tag_path, extension);
 
-		mkdir_p(final_path);
+		/* Okey, so we are should be able to treat this file */
+		fn.path = calloc(PATH_MAX, sizeof(char));
+		if (!fn.path)
+			return -ENOMEM;
+		fn.used = 0;
+
+		if (build_path_from_tag(filepath, &fn)) {
+			free(fn.path);
+			return 0;
+		}
+
+		final_path = calloc(PATH_MAX, sizeof(char));
+		sprintf(final_path, "%s/%s.%s", destpath, fn.path, extension);
+
+		free(fn.path);
+		fn.path = NULL;
 
 		/* We have a path, yeah ! Now copy that sucker to its final
 		   destination */
 		printf("%s => %s\n", filepath, final_path);
-		copy(filepath, final_path, bytes);
+		mkdir_p(final_path);
+		if (copy(filepath, final_path, filesize))
+			fprintf(stderr, "Could not copy %s to %s\n",
+					filepath, final_path);
+
+		free(final_path);
+		final_path = NULL;
 	}
 	else
 		DPRINTF(2, "%s/ (unreadable)\n", filepath);
