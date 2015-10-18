@@ -75,6 +75,7 @@ copy(const char *src, const char *dest, off_t filesize)
 {
 	int err = 0;
 	int in, out;
+	off_t ofs = 0;
 
 	in = open(src, O_RDONLY);
 	if (in == -1) {
@@ -104,7 +105,6 @@ copy(const char *src, const char *dest, off_t filesize)
 		goto close_fds;
 	}
 
-	off_t ofs = 0;
 	while(ofs < filesize) {
 		if(sendfile(out, in, &ofs, filesize - ofs) == -1) {
 			if (errno == EINTR) {

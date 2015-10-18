@@ -87,6 +87,7 @@ build_path_from_tag(const char *filepath, struct filename *fn)
 	TagLib_File *file;
 	TagLib_Tag *tag;
 	int ret = -1;
+	char *p = FMT;
 
 	file = taglib_file_new(filepath);
 	if (!file) {
@@ -107,7 +108,6 @@ build_path_from_tag(const char *filepath, struct filename *fn)
 		goto free_taglib;
 	}
 
-	char *p = FMT;
 	while (*p) {
 		if (*p != '%') {
 			ret = append(fn, "%c", *p++);
