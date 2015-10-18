@@ -1,5 +1,10 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
-CFLAGS = -Wall -Wextra -Wno-unused-parameter -Wno-unused -Werror -Wwrite-strings -g -O3 -I/usr/include/taglib
+CFLAGS += -Wall -Wextra -Wpedantic \
+	  -Wformat=2 -Wno-unused-parameter -Wshadow \
+	  -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
+	  -Wredundant-decls -Wnested-externs -Wmissing-include-dirs \
+	  -Wjump-misses-init -Wlogical-op -Werror -g -O3 -I/usr/include/taglib
+
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @TAGLIB_LIBS@ @TAGLIB_C_LIBS@
 CPPFLAGS = -I/usr/local/include -DVERSION=\"$(VERSION)\" -DPROG="\"$(PACKAGE)\"" @ARCH_DEFINES@
