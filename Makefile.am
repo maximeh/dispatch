@@ -26,10 +26,10 @@ analyze_srcs = $(dispatch_SOURCES)
 
 analyze: all
 	@for f in $(analyze_srcs); do \
-                if test "@AM_V@" = 1; then \
-                        echo clang --analyze -x c -I build-aux $$f -o /dev/null; \
-                else \
-                        echo "  CCSA  " $$f; \
-                fi; \
-                clang --analyze -x c -I build-aux $$f -o /dev/null; \
-        done
+		if test "@AM_V@" = 1; then \
+			echo clang --analyze -x c -I build-aux $$f -o /dev/null; \
+		else \
+			echo "  CCSA  " $$f; \
+		fi; \
+		clang --analyze -x c -I build-aux $$f -o /dev/null; \
+	done
