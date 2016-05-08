@@ -236,8 +236,9 @@ main(int argc, char **argv)
 	while ((c = getopt(argc, argv, "dhf:")) != -1) {
 		switch (c) {
 		case 'f':
-			FMT = calloc(strlen(optarg), sizeof(*FMT));
-			memcpy(FMT, optarg, strlen(optarg));
+			len = strlen(optarg) + 1;
+			FMT = calloc(len, sizeof(*FMT));
+			memcpy(FMT, optarg, len);
 			break;
 		case 'd':
 			++_debug;
@@ -268,12 +269,14 @@ main(int argc, char **argv)
 	DPRINTF(1, "Searching in '%s'\n", argv[0]);
 	DPRINTF(1, "Will move in '%s'\n", argv[1]);
 
-	DST = calloc(strlen(argv[1]), sizeof(char));
-	memcpy(DST, argv[1], strlen(argv[1]));
+	len = strlen(argv[1]) + 1;
+	DST = calloc(len, sizeof(*DST));
+	memcpy(DST, argv[1], len);
 
 	if (FMT == NULL) {
-		FMT = calloc(strlen(DEFAULT_FMT), sizeof(char));
-		memcpy(FMT, DEFAULT_FMT, strlen(DEFAULT_FMT));
+		len = strlen(DEFAULT_FMT) + 1;
+		FMT = calloc(len, sizeof(*FMT));
+		memcpy(FMT, DEFAULT_FMT, len);
 	}
 
 	if (nftw(argv[0], dispatch_entry, USE_FDS, FTW_PHYS)) {
