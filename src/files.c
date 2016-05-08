@@ -71,7 +71,7 @@ get_filename_ext(const char *filename)
 }
 
 int
-copy(const char *src, const char *dest, off_t filesize)
+copy(const char *src, const char *dest, const off_t filesize)
 {
 	int err = 0;
 	int in, out;
@@ -106,7 +106,7 @@ copy(const char *src, const char *dest, off_t filesize)
 	}
 
 	while(ofs < filesize) {
-		if(sendfile(out, in, &ofs, filesize - ofs) == -1) {
+		if(sendfile(out, in, &ofs, (size_t)(filesize - ofs)) == -1) {
 			if (errno == EINTR) {
 				err = EINTR;
 				goto close_fds;
