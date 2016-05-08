@@ -231,7 +231,8 @@ dispatch_entry(const char *filepath, const struct stat *info,
 int
 main(int argc, char **argv)
 {
-	int c;
+	int c, ret;
+	size_t len;
 	while ((c = getopt(argc, argv, "dhf:")) != -1) {
 		switch (c) {
 		case 'f':
@@ -253,15 +254,15 @@ main(int argc, char **argv)
 
 	if (argc != 2) {
 		usage();
-		free(FMT);
-		return EXIT_FAILURE;
+		ret = EXIT_FAILURE;
+		goto free_fmt;
 	}
 
 	/* Invalid directory path? */
 	if (argv[0] == NULL || *argv[0] == '\0') {
 		usage();
-		free(FMT);
-		return EXIT_FAILURE;
+		ret = EXIT_FAILURE;
+		goto free_fmt;
 	}
 
 	DPRINTF(1, "Searching in '%s'\n", argv[0]);
@@ -276,12 +277,15 @@ main(int argc, char **argv)
 	}
 
 	if (nftw(argv[0], dispatch_entry, USE_FDS, FTW_PHYS)) {
-		free(FMT);
-		free(DST);
-		return EXIT_FAILURE;
+		ret = EXIT_FAILURE;
+		goto free_dst;
 	}
+	ret = EXIT_SUCCESS;
 
-	free(FMT);
+free_dst:
 	free(DST);
-	return EXIT_SUCCESS;
+free_fmt:
+	free(FMT);
+	return ret;
+
 }
