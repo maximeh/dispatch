@@ -1,9 +1,15 @@
 AUTOMAKE_OPTIONS = foreign subdir-objects
-CFLAGS += -Wall -Wextra -Wpedantic \
-	  -Wformat=2 -Wno-unused-parameter -Wshadow \
-	  -Wwrite-strings -Wstrict-prototypes -Wold-style-definition \
-	  -Wredundant-decls -Wnested-externs -Wmissing-include-dirs \
-	  -Wjump-misses-init -Wlogical-op -Werror -g -O3 -I/usr/include/taglib
+CFLAGS += -Ofast -march=native -Wall -Wextra -Wpedantic -Wformat=2 \
+	  -Wno-unused-parameter -Wshadow -Wwrite-strings -Wstrict-prototypes \
+	  -Wold-style-definition -Wredundant-decls -Wnested-externs \
+	  -Wmissing-include-dirs -Wcast-align -Wcast-qual \
+	  -Wdisabled-optimization -Winit-self -Wmissing-declarations \
+	  -Wsign-conversion -Wstrict-overflow=5 -Wswitch-default -Wundef \
+	  -Werror -Wno-unused \
+	  -fsanitize=address -fsanitize=leak -fsanitize=undefined \
+	  -fsanitize=signed-integer-overflow -fsanitize=shift \
+	  -fsanitize=integer-divide-by-zero -fsanitize=null \
+	  -Wjump-misses-init -Wlogical-op -g -I/usr/include/taglib
 
 LDFLAGS = @LDFLAGS@
 LIBS = @LIBS@ @TAGLIB_LIBS@ @TAGLIB_C_LIBS@
