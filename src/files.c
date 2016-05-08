@@ -26,17 +26,17 @@
  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+#include "files.h"
 #include <errno.h>         // for errno, EINTR
-#include <fcntl.h>         // for open, posix_fadvise, posix_fallocate, etc
+#include <fcntl.h>         // for open, posix_fadvise, posix_fallocate, O_CREAT
 #include <libgen.h>        // for dirname
 #include <limits.h>        // for PATH_MAX
-#include <stddef.h>        // for size_t
 #include <stdio.h>         // for fprintf, stderr
-#include <string.h>        // for strerror, strlen, strrchr, NULL, strncpy
+#include <stdlib.h>        // for size_t, NULL
+#include <string.h>        // for strerror, strlen, strncpy, strrchr
 #include <sys/sendfile.h>  // for sendfile
 #include <sys/stat.h>      // for mkdir, S_IRWXU
 #include <unistd.h>        // for close, off_t
-
 #include "tools.h"         // for DPRINTF
 
 int
