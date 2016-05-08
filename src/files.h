@@ -26,8 +26,9 @@
  THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#include <stdlib.h>
+#pragma once
+#include <sys/types.h>  // for off_t
 
 int mkdir_p(const char *path);
 const char * get_filename_ext(const char *filename);
-int copy(const char *src, const char *dest, size_t bytes);
+int copy(const char *src, const char *dest, const off_t filesize);
