@@ -149,7 +149,7 @@ free_taglib:
 	return ret;
 }
 
-int
+static int
 dispatch_entry(const char *filepath, const struct stat *info,
 		const int typeflag, struct FTW *pathinfo)
 {
