@@ -195,7 +195,7 @@ dispatch_entry(const char *filepath, const struct stat *info,
 		}
 
 		/* Okey, so we are should be able to treat this file */
-		fn.path = calloc(PATH_MAX, sizeof(char));
+		fn.path = calloc(PATH_MAX, sizeof(*fn.path));
 		if (!fn.path)
 			return -ENOMEM;
 		fn.used = 0;
@@ -205,7 +205,7 @@ dispatch_entry(const char *filepath, const struct stat *info,
 			return 0;
 		}
 
-		final_path = calloc(PATH_MAX, sizeof(char));
+		final_path = calloc(PATH_MAX, sizeof(*final_path));
 		sprintf(final_path, "%s/%s.%s", DST, fn.path, extension);
 
 		free(fn.path);
@@ -236,7 +236,7 @@ main(int argc, char **argv)
 	while ((c = getopt(argc, argv, "dhf:")) != -1) {
 		switch (c) {
 		case 'f':
-			FMT = calloc(strlen(optarg), sizeof(char));
+			FMT = calloc(strlen(optarg), sizeof(*FMT));
 			memcpy(FMT, optarg, strlen(optarg));
 			break;
 		case 'd':
